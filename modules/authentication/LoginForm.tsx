@@ -1,12 +1,16 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import {getAuth, signInWithEmailAndPassword} from 'firebase/auth';
-import {app} from  '@/firebase.config';
+import Link from "next/link";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  UserCredential,
+} from "firebase/auth";
+import { app } from "@/firebase.config";
 import {
   Form,
   FormControl,
@@ -14,60 +18,64 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@/components/ui/form'
-import { Button } from '@/components/ui/button'
+} from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { AuthUser, useAuth } from "@/contexts/auth-context";
+import { useRouter } from "next/navigation";
 
 // Improved schema with additional validation rules
 const formSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address' }),
+  email: z.string().email({ message: "Invalid email address" }),
   password: z
     .string()
-    .min(6, { message: 'Password must be at least 6 characters long' })
-    .regex(/[a-zA-Z0-9]/, { message: 'Password must be alphanumeric' }),
-})
+    .min(6, { message: "Password must be at least 6 characters long" })
+    .regex(/[a-zA-Z0-9]/, { message: "Password must be alphanumeric" }),
+});
 
 export default function LoginForm() {
-    const auth = getAuth(app);
+  const { setUser } = useAuth();
+  const auth = getAuth(app);
+  const navigate = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
-  })
+  });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       // Assuming an async login function
       signInWithEmailAndPassword(auth, values.email, values.password)
-  .then((userCredential) => {
-    // Signed in 
-    const user = userCredential.user;
-
-    console.log(user);
-    
-    toast(
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
-        </pre>,
-      )
-  })
-  .catch((error) => {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-  });
-      
+        .then((userCredential: UserCredential) => {
+          // Signed in
+          const user = userCredential.user;
+          setUser(user);
+          navigate.replace("/");
+          toast(
+            <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+              <code className="text-white">
+                {JSON.stringify(values, null, 2)}
+              </code>
+            </pre>
+          );
+        })
+        .catch((error) => {
+          const errorCode = error.code;
+          const errorMessage = error.message;
+        });
     } catch (error) {
-      console.error('Form submission error', error)
-      toast.error('Failed to submit the form. Please try again.')
+      console.error("Form submission error", error);
+      toast.error("Failed to submit the form. Please try again.");
     }
   }
 
@@ -110,11 +118,10 @@ export default function LoginForm() {
                     <FormItem className="grid gap-2">
                       <div className="flex justify-between items-center">
                         <FormLabel htmlFor="password">Password</FormLabel>
-                        
                       </div>
                       <FormControl>
                         <Input
-                        type='password'
+                          type="password"
                           id="password"
                           placeholder="******"
                           autoComplete="current-password"
@@ -128,12 +135,11 @@ export default function LoginForm() {
                 <Button type="submit" className="w-full">
                   Login
                 </Button>
-                
               </div>
             </form>
           </Form>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
+            Don&apos;t have an account?{" "}
             <Link href="/register" className="underline">
               Register
             </Link>
@@ -141,5 +147,5 @@ export default function LoginForm() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
